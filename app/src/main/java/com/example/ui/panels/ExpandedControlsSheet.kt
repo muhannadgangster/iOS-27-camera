@@ -56,6 +56,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
@@ -154,10 +155,30 @@ fun ExpandedControlsSheet(
           ) {
             Box(
               modifier = Modifier
-                .size(46.dp)
+                .size(48.dp)
                 .clip(CircleShape)
-                .background(if (isCurrent) CameraGoldAccent else Color.White.copy(alpha = 0.12f))
-                .border(1.dp, if (isCurrent) CameraGoldAccent else CameraGlassBorder, CircleShape),
+                .background(
+                  if (isCurrent) {
+                    Brush.verticalGradient(
+                      listOf(CameraGoldAccent, CameraGoldAccent.copy(alpha = 0.85f))
+                    )
+                  } else {
+                    Brush.verticalGradient(
+                      listOf(Color(0x52232938), Color(0x380F131D))
+                    )
+                  }
+                )
+                .border(
+                  width = 1.2.dp,
+                  brush = Brush.linearGradient(
+                    if (isCurrent) {
+                      listOf(Color.White, CameraGoldAccent)
+                    } else {
+                      listOf(Color(0x80FFFFFF), Color(0x26FFFFFF))
+                    }
+                  ),
+                  shape = CircleShape
+                ),
               contentAlignment = Alignment.Center
             ) {
               Icon(

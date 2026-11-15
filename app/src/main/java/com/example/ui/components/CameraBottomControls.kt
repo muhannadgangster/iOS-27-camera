@@ -1,15 +1,10 @@
 package com.example.ui.components
 
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -17,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.PhotoLibrary
@@ -31,7 +25,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
@@ -40,8 +35,13 @@ import coil.compose.AsyncImage
 import com.example.model.CameraMode
 import com.example.model.CapturedMedia
 import com.example.ui.theme.CameraGlassBorder
-import com.example.ui.theme.CameraRedRecording
 
+/**
+ * iOS 26 Camera Bottom Controls:
+ * - Round Liquid Glass photo preview button on the left
+ * - Liquid Glass Shutter button with visible outer glass rim and side edges
+ * - Round Liquid Glass camera flip button on the right
+ */
 @Composable
 fun CameraBottomControls(
   currentMode: CameraMode,
@@ -57,17 +57,35 @@ fun CameraBottomControls(
   Row(
     modifier = modifier
       .fillMaxWidth()
-      .padding(horizontal = 24.dp, vertical = 12.dp),
+      .padding(horizontal = 24.dp, vertical = 8.dp),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
-    // 1. Gallery Thumbnail
+    // 1. Round Media Preview Button (Changed from square to round in iOS 26)
     Box(
       modifier = Modifier
-        .size(52.dp)
-        .clip(RoundedCornerShape(14.dp))
-        .background(Color.White.copy(alpha = 0.12f))
-        .border(1.dp, CameraGlassBorder, RoundedCornerShape(14.dp))
+        .size(54.dp)
+        .shadow(elevation = 6.dp, shape = CircleShape, clip = false)
+        .clip(CircleShape)
+        .background(
+          Brush.verticalGradient(
+            colors = listOf(
+              Color(0x52232938),
+              Color(0x380F131D)
+            )
+          )
+        )
+        .border(
+          width = 1.2.dp,
+          brush = Brush.linearGradient(
+            colors = listOf(
+              Color(0x80FFFFFF),
+              CameraGlassBorder,
+              Color(0x26FFFFFF)
+            )
+          ),
+          shape = CircleShape
+        )
         .clickable { onOpenGallery() }
         .testTag("gallery_thumbnail_button"),
       contentAlignment = Alignment.Center
@@ -77,65 +95,30 @@ fun CameraBottomControls(
           model = recentMedia.uri,
           contentDescription = "Recent photo thumbnail",
           contentScale = ContentScale.Crop,
-          modifier = Modifier.clip(RoundedCornerShape(14.dp))
+          modifier = Modifier
+            .size(48.dp)
+            .clip(CircleShape)
         )
       } else {
         Icon(
           imageVector = Icons.Default.PhotoLibrary,
           contentDescription = "Open Gallery",
-          tint = Color.White.copy(alpha = 0.7f),
-          modifier = Modifier.size(26.dp)
+          tint = Color.White.copy(alpha = 0.8f),
+          modifier = Modifier.size(24.dp)
         )
       }
     }
 
-    // 2. Large Circular Shutter Button
-    val isVideo = currentMode.isVideoMode
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
-    val scale by animateFloatAsState(
-      targetValue = if (isPressed) 0.90f else 1.0f,
-      animationSpec = spring(),
-      label = "shutter_scale"
+    // 2. Liquid Glass Shutter Button
+    // Outer glass rim, visible side edges, reflections, tactile feedback
+    LiquidGlassShutterButton(
+      isVideoMode = currentMode.isVideoMode,
+      isRecording = isRecording,
+      onClick = onShutterClick,
+      modifier = Modifier.testTag("camera_shutter_button")
     )
 
-    val innerCornerRadius by animateDpAsState(
-      targetValue = if (isVideo && isRecording) 8.dp else 32.dp,
-      animationSpec = tween(250, easing = FastOutSlowInEasing),
-      label = "inner_corner"
-    )
-
-    val innerSize by animateDpAsState(
-      targetValue = if (isVideo && isRecording) 30.dp else 64.dp,
-      animationSpec = tween(250, easing = FastOutSlowInEasing),
-      label = "inner_size"
-    )
-
-    Box(
-      modifier = Modifier
-        .size(80.dp)
-        .scale(scale)
-        .border(4.dp, Color.White, CircleShape)
-        .padding(4.dp)
-        .clickable(
-          interactionSource = interactionSource,
-          indication = null
-        ) { onShutterClick() }
-        .testTag("camera_shutter_button"),
-      contentAlignment = Alignment.Center
-    ) {
-      val innerColor = if (isVideo) CameraRedRecording else Color.White
-
-      Box(
-        modifier = Modifier
-          .size(innerSize)
-          .clip(RoundedCornerShape(innerCornerRadius))
-          .background(innerColor)
-      )
-    }
-
-    // 3. Camera Lens Switch (Flip) Button
+    // 3. Round Camera Lens Switch (Flip) Button
     val animatedRotation by animateFloatAsState(
       targetValue = flipRotation,
       animationSpec = spring(),
@@ -144,10 +127,28 @@ fun CameraBottomControls(
 
     Box(
       modifier = Modifier
-        .size(52.dp)
+        .size(54.dp)
+        .shadow(elevation = 6.dp, shape = CircleShape, clip = false)
         .clip(CircleShape)
-        .background(Color.White.copy(alpha = 0.12f))
-        .border(1.dp, CameraGlassBorder, CircleShape)
+        .background(
+          Brush.verticalGradient(
+            colors = listOf(
+              Color(0x52232938),
+              Color(0x380F131D)
+            )
+          )
+        )
+        .border(
+          width = 1.2.dp,
+          brush = Brush.linearGradient(
+            colors = listOf(
+              Color(0x80FFFFFF),
+              CameraGlassBorder,
+              Color(0x26FFFFFF)
+            )
+          ),
+          shape = CircleShape
+        )
         .clickable {
           flipRotation += 180f
           onSwitchCamera()
@@ -160,7 +161,7 @@ fun CameraBottomControls(
         contentDescription = "Switch camera lens",
         tint = Color.White,
         modifier = Modifier
-          .size(26.dp)
+          .size(24.dp)
           .rotate(animatedRotation)
       )
     }

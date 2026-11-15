@@ -29,6 +29,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
@@ -36,11 +38,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.CameraDeepBlack
-import com.example.ui.theme.CameraGoldAccent
 import com.example.ui.theme.CameraGlassBorder
+import com.example.ui.theme.CameraGoldAccent
 import com.example.ui.theme.CameraTextPrimary
 import kotlin.math.abs
 
+/**
+ * iOS 26 Focal Length (Zoom) selector.
+ * Cleaner floating appearance without a solid background bar behind the toggles,
+ * with subtle individual Liquid Glass rings.
+ */
 @Composable
 fun CameraZoomControl(
   zoomRatio: Float,
@@ -51,7 +58,6 @@ fun CameraZoomControl(
 ) {
   var showZoomSlider by remember { mutableStateOf(false) }
 
-  // Available fixed zoom stops based on device capabilities
   val zoomStops = remember(minZoom, maxZoom) {
     val list = mutableListOf<Float>()
     if (minZoom < 1.0f) list.add(0.5f)
@@ -67,7 +73,7 @@ fun CameraZoomControl(
       .padding(vertical = 4.dp),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    // Zoom Slider when expanded
+    // Zoom fine slider
     AnimatedVisibility(
       visible = showZoomSlider,
       enter = fadeIn(),
@@ -77,7 +83,7 @@ fun CameraZoomControl(
         modifier = Modifier
           .fillMaxWidth(0.85f)
           .clip(RoundedCornerShape(20.dp))
-          .background(CameraDeepBlack.copy(alpha = 0.65f))
+          .background(CameraDeepBlack.copy(alpha = 0.75f))
           .border(1.dp, CameraGlassBorder, RoundedCornerShape(20.dp))
           .padding(horizontal = 16.dp, vertical = 6.dp)
       ) {
@@ -103,15 +109,13 @@ fun CameraZoomControl(
       }
     }
 
-    Spacer(modifier = Modifier.height(4.dp))
+    Spacer(modifier = Modifier.height(2.dp))
 
-    // iOS 27 Zoom Pills
-    Box(
+    // iOS 26 Floating Focal Length Toggles (No heavy container bar)
+    Row(
+      horizontalArrangement = Arrangement.spacedBy(14.dp),
+      verticalAlignment = Alignment.CenterVertically,
       modifier = Modifier
-        .clip(CircleShape)
-        .background(Color.Black.copy(alpha = 0.45f))
-        .border(0.8.dp, CameraGlassBorder, CircleShape)
-        .padding(horizontal = 4.dp, vertical = 4.dp)
         .pointerInput(Unit) {
           detectDragGestures(
             onDragStart = { showZoomSlider = true },
@@ -125,33 +129,57 @@ fun CameraZoomControl(
           )
         }
     ) {
-      Row(
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        zoomStops.forEach { stop ->
-          val isSelected = abs(zoomRatio - stop) < 0.15f
-          val label = if (stop == 0.5f) ".5" else stop.toInt().toString()
+      zoomStops.forEach { stop ->
+        val isSelected = abs(zoomRatio - stop) < 0.18f
+        val label = if (stop == 0.5f) ".5" else stop.toInt().toString()
 
-          Box(
-            modifier = Modifier
-              .size(34.dp)
-              .clip(CircleShape)
-              .background(if (isSelected) CameraGoldAccent else Color.Transparent)
-              .clickable {
-                onZoomChange(stop)
-                showZoomSlider = false
+        Box(
+          modifier = Modifier
+            .size(36.dp)
+            .clip(CircleShape)
+            .background(
+              if (isSelected) {
+                Brush.radialGradient(
+                  colors = listOf(CameraGoldAccent, CameraGoldAccent.copy(alpha = 0.9f))
+                )
+              } else {
+                Brush.verticalGradient(
+                  colors = listOf(Color(0x38242A38), Color(0x1F000000))
+                )
               }
-              .testTag("zoom_pill_$label"),
-            contentAlignment = Alignment.Center
-          ) {
-            Text(
-              text = if (isSelected && abs(zoomRatio - stop) > 0.1f) "%.1f".format(zoomRatio) else label,
-              color = if (isSelected) Color.Black else CameraTextPrimary,
-              fontSize = 12.sp,
-              fontWeight = FontWeight.Bold
             )
-          }
+            .drawBehind {
+              if (isSelected) {
+                // Subtle bright rim
+                drawCircle(
+                  brush = Brush.linearGradient(
+                    colors = listOf(Color.White, CameraGoldAccent)
+                  ),
+                  radius = size.minDimension / 2f - 0.5.dp.toPx(),
+                  style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.2.dp.toPx())
+                )
+              } else {
+                // Faint glass rim
+                drawCircle(
+                  color = Color(0x40FFFFFF),
+                  radius = size.minDimension / 2f - 0.5.dp.toPx(),
+                  style = androidx.compose.ui.graphics.drawscope.Stroke(width = 0.8.dp.toPx())
+                )
+              }
+            }
+            .clickable {
+              onZoomChange(stop)
+              showZoomSlider = false
+            }
+            .testTag("zoom_pill_$label"),
+          contentAlignment = Alignment.Center
+        ) {
+          Text(
+            text = if (isSelected && abs(zoomRatio - stop) > 0.1f) "%.1f".format(zoomRatio) else label,
+            color = if (isSelected) Color.Black else CameraTextPrimary,
+            fontSize = if (isSelected && abs(zoomRatio - stop) > 0.1f) 11.sp else 13.sp,
+            fontWeight = FontWeight.Bold
+          )
         }
       }
     }

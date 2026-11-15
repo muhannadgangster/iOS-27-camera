@@ -233,7 +233,7 @@ fun CameraScreen(
 
       Spacer(modifier = Modifier.weight(1f))
 
-      // Zoom Selector Pills
+      // 1. Floating Focal Length Zoom Selector
       CameraZoomControl(
         zoomRatio = uiState.zoomRatio,
         minZoom = uiState.minZoomRatio,
@@ -241,13 +241,9 @@ fun CameraScreen(
         onZoomChange = { viewModel.setZoom(it) }
       )
 
-      // Mode Selector Dial
-      CameraModeSelector(
-        currentMode = uiState.currentMode,
-        onModeSelected = { viewModel.onModeChange(it) }
-      )
+      Spacer(modifier = Modifier.height(10.dp))
 
-      // Bottom Shutter & Gallery Controls
+      // 2. Shutter, Round Preview & Flip Button Row
       CameraBottomControls(
         currentMode = uiState.currentMode,
         isRecording = uiState.isRecordingVideo,
@@ -255,6 +251,12 @@ fun CameraScreen(
         onShutterClick = { viewModel.onShutterPress(hasAudioPermission) },
         onSwitchCamera = { viewModel.switchCamera() },
         onOpenGallery = { viewModel.openGallery() }
+      )
+
+      // 3. iOS 26 Mode Selector (PHOTO / VIDEO two-tab bar positioned below shutter)
+      CameraModeSelector(
+        currentMode = uiState.currentMode,
+        onModeSelected = { viewModel.onModeChange(it) }
       )
     }
 
