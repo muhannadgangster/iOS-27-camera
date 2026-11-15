@@ -1,0 +1,6 @@
+{
+  "name": "Camera",
+  "description": "Professional iOS 27-inspired camera with Liquid Glass interface, manual controls, real-time photographic styles, and high-definition video recording.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
